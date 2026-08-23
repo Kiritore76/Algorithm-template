@@ -21,6 +21,25 @@ inline int read()
 }
 ```
 
+| 数据范围     | 一般可接受复杂度      | 常见算法                   |
+| ------------ | --------------------- | -------------------------- |
+| `n ≤ 10`     | `O(n!)`               | 全排列、暴搜               |
+| `n ≤ 20`     | `O(2^n × poly(n))`    | 状压 DP、子集枚举          |
+| `n ≤ 25`     | `O(2^(n/2))`          | 折半搜索                   |
+| `n ≤ 100`    | `O(n^3)`              | Floyd、区间 DP             |
+| `n ≤ 500`    | `O(n^3)`              | Floyd、三维转移            |
+| `n ≤ 2000`   | `O(n^2)`              | 二维 DP、枚举两点          |
+| `n ≤ 5000`   | `O(n^2)`              | DP、枚举                   |
+| `n ≤ 10^4`   | `O(n√n)`              | 分块、根号算法             |
+| `n ≤ 10^5`   | `O(n log n)`          | 排序、线段树、树状数组     |
+| `n ≤ 2×10^5` | `O(n log n)`          | CF / 牛客常见范围          |
+| `n ≤ 10^6`   | `O(n)` / `O(n log n)` | 双指针、前缀和、哈希、筛法 |
+| `n ≤ 10^7`   | `O(n)`                | 线性扫描                   |
+| `n ≤ 10^9`   | `O(√n)` / `O(log n)`  | 数论、二分、快速幂         |
+| `n ≤ 10^18`  | `O(log n)`            | 快速幂、数学、数位相关     |
+
+---
+
 ## 基础算法
 
 ### 高精度
@@ -181,7 +200,7 @@ void msort(int s,int t)
 }
 ```
 
-## 二分
+### 二分
 
 * 手动二分
 
@@ -203,7 +222,7 @@ int find()
     return r;
 }
 //寻找第一个满足条件的（最小值）
-auto find_first=[&](int x) 
+int find (int x) 
 {
     int l=1,r=m,ans=m;
     while(l<=r) 
@@ -217,7 +236,7 @@ auto find_first=[&](int x)
         else l=mid+1;   
     }
     return ans;
-};
+}
 ```
 
 * stl二分
@@ -274,6 +293,89 @@ while (r - l > eps) {
     else l = lmid;
 }
 return f((l + r) / 2.0);
+```
+
+### 并查集
+
+* 普通 DSU
+
+```cpp
+int fa[N],siz[N];
+int find(int x)
+{
+    return fa[x]==x?x:fa[x]=find(fa[x]);
+}
+
+void merge(int x,int y)
+{
+    x=find(x);
+    y=find(y);
+
+    if(x==y)return;
+    if(siz[x]<siz[y]) swap(x,y);
+    fa[y]=x;
+    siz[x]+=siz[y];
+}
+```
+
+* 带权并查集
+
+```cpp
+int find(int x)
+{
+    if(fa[x]==x)return x;
+    int p=fa[x];
+    fa[x]=find(fa[x]);
+    d[x]+=d[p];// d[x]: x 到 fa[x] 的距离
+    //d[x]^=d[p]; // d[x]: x ^ fa[x]
+    //d[x]=max(d[x],d[p]); //d[x]: x 到根路径最大值
+    return fa[x];
+}
+```
+
+* 可撤销并查集
+
+```cpp
+int fa[N],siz[N];
+struct Node
+{
+    int x,fa,siz;
+};
+stack<Node> st;
+
+int find(int x)
+{
+    while(fa[x]!=x)x=fa[x];
+    return x;
+}
+void merge(int x,int y)
+{
+    x=find(x),y=find(y);
+
+    if(x==y)
+    {
+        st.push({0,0,0});
+        return;
+    }
+
+    if(siz[x]>siz[y])
+        swap(x,y);
+
+    st.push({x,fa[x],siz[y]});
+
+    fa[x]=y;
+    siz[y]+=siz[x];
+}
+void undo()
+{
+    auto [x,f,s]=st.top();
+    st.pop();
+
+    if(!x)return;
+
+    fa[x]=f;
+    siz[fa[x]]=s;
+}
 ```
 
 ## STL
@@ -564,6 +666,21 @@ signed main()
     }
 ```
 
+### Z函数
+
+z[i] = LCP(s, s[i...])
+
+```cpp
+vector<int> z(n,0);
+z[0]=n;
+for(int i=1,l=0,r=0;i<n;i++)
+{
+    if(i<=r) z[i]=min(r-i+1,z[i-l]);
+    while(i+z[i]<n&&s[z[i]]==s[i+z[i]]) z[i]++;
+    if(i+z[i]-1>r) l=i,r=i+z[i]-1;
+}
+```
+
 ### Trie字典树
 
 * 前缀查询
@@ -707,7 +824,7 @@ long long kpow(long long a,long long b)
     while(b)
     {
         if(b&1) res=res*a%MOD;
-        a=a*a%N;
+        a=a*a%MOD;
         b>>=1;
     }
     return res;
@@ -777,6 +894,32 @@ long long S(int n, int k)
     return res;
 }
 ```
+
+### 排列与置换
+
+* 排列的环分解
+
+​	把这个排列重复作用多少次后，整个排列回到原状，答是所有环长度的最小公倍数
+
+```cpp
+int swaps = 0;
+for (int i = 1; i <= n; i++)
+{
+    while (p[i] != i)
+    {
+        swap(p[i], p[p[i]]);
+        swaps++;
+    }
+}
+int cycles = n - swaps;
+```
+
+* 循环引理（Raney Lemma）
+
+​	长度为 $L$ 的整数序列，若每项 $ai <= 1$，且总和为 $S > 0$，
+​	则其 $L$ 个循环位移中，恰好有 $S$ 个循环位移满足所有前缀和 $> 0$。
+
+​	因此，对于固定元素组成的所有排列： $合法排列数 = 所有排列数 × S / L$
 
 ### 质数
 
@@ -881,13 +1024,6 @@ void init()
     for(int j = i; j < N; j += i)
     d[j].push_back(i);
 }
-```
-
-### 线性求逆元
-
-```cpp
-inv[0]=inv[1]=1;
-for (int i=2;i<=n;i++) inv[i]=(long long)(mo-mo/i)*inv[mo%i]%mo;
 ```
 
 ### 欧拉函数
@@ -1043,38 +1179,20 @@ for (int i = 2; i <= n; ++i) {
 
 * 有向图游戏
 
+  $sg[i]\ !=0$ 先手胜
+
+  多个子游戏总$SG=sg(A)⊕sg(B)⊕sg(C)$
+
 ```cpp
-void dfs()
+int dfs(int x)
 {
-    while(!q.empty())
+    if(sg[x]!=-1) return sg[x];
+    memset(vis,0,sizeof vis);
+
+    for(auto y:g[x]) vis[dfs(y)]=1;
+    for(int i=0;;i++)
     {
-        int x=q.front();
-        q.pop();
-        temp=0;
-        memset(vis,0,sizeof(vis));
-        for(int i=head[x];i;i=edge[i].next)
-        {
-            int y=edge[i].to;
-            temp=max(temp,sg[y]);
-            vis[sg[y]]=1;
-        }
-        for(int i=0;i<=temp+1;i++)
-        {
-            if(!vis[i]) 
-            {
-                sg[x]=i;
-                break;
-            }
-        }
-        for(int i=rehead[x];i;i=reedge[i].next)
-        {
-            int y=reedge[i].to;
-            out[y]--;
-            if(!out[y])
-            {
-                q.push(y);
-            }
-        }
+        if(!vis[i]) return sg[x]=i;
     }
 }
 ```
@@ -1143,6 +1261,41 @@ int main()
         printf("%d ",(int)(a[i].x/limit+0.5));
     return 0;
 }
+```
+
+### 线性基
+
+$$X_1 + X_2 = (X_1 \oplus X_2) + 2 \times (X_1 \mathrel{\&} X_2)$$
+
+线性基就是用最多 $x(2^x=n)$个“有代表性的数”，表示原数组所有可能的子集异或结果。
+
+```cpp
+struct LinearBasis
+{
+    long long p[30] = {};//表示一个最高位是第 i 位的数。
+    void insert(long long x)
+    {
+        for (int i = 29; i >= 0; i--)
+        {
+            if (!(x >> i & 1)) continue;
+            if (p[i] == 0)
+            {
+                p[i] = x;
+                return;
+            }
+            x ^= p[i];
+        }
+    }
+    long long getMax()
+    {
+        long long ans = 0;
+        for (int i = 29; i >= 0; i--)
+        {
+            ans = max(ans, ans ^ p[i]);
+        }
+        return ans;
+    }
+};
 ```
 
 ### 线性代数
@@ -1352,6 +1505,506 @@ int main() {
   println(ans.a[1][1] % mod);
 }
 ```
+
+## 计算几何
+
+### 基础定义
+
+* 精度比较
+
+```cpp
+const double eps=1e-9;
+const double PI=acos(-1.0);
+
+int sgn(double x)
+{
+    if(fabs(x)<eps) return 0;
+    return x<0?-1:1;
+}
+```
+
+* 点 / 向量
+
+```cpp
+struct Point
+{
+    double x,y;
+
+    Point(){}
+    Point(double _x,double _y):x(_x),y(_y){}
+
+    Point operator + (const Point& b) const
+    {
+        return Point(x+b.x,y+b.y);
+    }
+
+    Point operator - (const Point& b) const
+    {
+        return Point(x-b.x,y-b.y);
+    }
+
+    Point operator * (double k) const
+    {
+        return Point(x*k,y*k);
+    }
+
+    Point operator / (double k) const
+    {
+        return Point(x/k,y/k);
+    }
+
+    bool operator == (const Point& b) const
+    {
+        return sgn(x-b.x)==0&&sgn(y-b.y)==0;
+    }
+
+    bool operator < (const Point& b) const
+    {
+        if(sgn(x-b.x)!=0) return x<b.x;
+        return y<b.y;
+    }
+};
+
+typedef Point Vector;
+```
+
+### 向量运算
+
+* 点积
+
+点积主要用于判断夹角、投影、方向关系。
+
+```cpp
+double dot(Vector a,Vector b)
+{
+    return a.x*b.x+a.y*b.y;
+}
+```
+
+* 叉积
+
+叉积主要用于判断左右、共线、面积、相交。
+
+```cpp
+double cross(Vector a,Vector b)
+{
+    return a.x*b.y-a.y*b.x;
+}
+
+double cross(Point A,Point B,Point C)
+{
+    return cross(B-A,C-A);
+}
+```
+
+判断方向：
+
+```cpp
+// cross(A,B,C)>0 ：C 在 AB 左边
+// cross(A,B,C)<0 ：C 在 AB 右边
+// cross(A,B,C)=0 ：A、B、C 共线
+```
+
+* 向量长度 / 两点距离
+
+```cpp
+double len(Vector a)
+{
+    return sqrt(dot(a,a));
+}
+
+double dis(Point a,Point b)
+{
+    return len(a-b);
+}
+
+double dis2(Point a,Point b)
+{
+    return dot(a-b,a-b);
+}
+```
+
+* 向量夹角
+
+```cpp
+double angle(Vector a,Vector b)
+{
+    double t=dot(a,b)/len(a)/len(b);
+    t=max(-1.0,min(1.0,t));
+    return acos(t);
+}
+```
+
+* 向量旋转
+
+逆时针旋转 rad 弧度。
+
+```cpp
+Vector rotate(Vector a,double rad)
+{
+    return Point(
+        a.x*cos(rad)-a.y*sin(rad),
+        a.x*sin(rad)+a.y*cos(rad)
+    );
+}
+```
+
+逆时针旋转 90 度：
+
+```cpp
+Vector rotate90(Vector a)
+{
+    return Point(-a.y,a.x);
+}
+```
+
+### 点和线
+
+* 判断点是否在线段上
+
+```cpp
+bool onSegment(Point p,Point a,Point b)
+{
+    return sgn(cross(a,b,p))==0
+        &&sgn(dot(p-a,p-b))<=0;
+}
+```
+
+* 判断两条直线是否平行
+
+```cpp
+bool parallel(Point a,Point b,Point c,Point d)
+{
+    return sgn(cross(b-a,d-c))==0;
+}
+```
+
+* 两直线交点
+
+直线表示为 `P+t*v`。
+
+```cpp
+Point lineIntersection(Point p,Vector v,Point q,Vector w)
+{
+    Vector u=p-q;
+    double t=cross(w,u)/cross(v,w);
+    return p+v*t;
+}
+```
+
+使用：
+
+```cpp
+Point p=lineIntersection(A,B-A,C,D-C);
+```
+
+前提是两直线不平行。
+
+* 点到直线距离
+
+```cpp
+double pointLineDistance(Point p,Point a,Point b)
+{
+    return fabs(cross(b-a,p-a))/len(b-a);
+}
+```
+
+* 点到线段距离
+
+```cpp
+double pointSegmentDistance(Point p,Point a,Point b)
+{
+    if(a==b) return dis(p,a);
+
+    Vector v1=b-a;
+    Vector v2=p-a;
+    Vector v3=p-b;
+
+    if(sgn(dot(v1,v2))<0) return len(v2);
+    if(sgn(dot(v1,v3))>0) return len(v3);
+
+    return fabs(cross(v1,v2))/len(v1);
+}
+```
+
+* 点在线上的投影
+
+```cpp
+Point projection(Point p,Point a,Point b)
+{
+    Vector v=b-a;
+    double t=dot(p-a,v)/dot(v,v);
+    return a+v*t;
+}
+```
+
+### 线段
+
+* 判断两线段是否相交
+
+包含端点相交和共线重叠。
+
+```cpp
+bool segmentIntersect(Point a,Point b,Point c,Point d)
+{
+    double c1=cross(a,b,c);
+    double c2=cross(a,b,d);
+    double c3=cross(c,d,a);
+    double c4=cross(c,d,b);
+
+    if(sgn(c1)*sgn(c2)<0&&sgn(c3)*sgn(c4)<0)
+        return true;
+
+    if(onSegment(c,a,b)) return true;
+    if(onSegment(d,a,b)) return true;
+    if(onSegment(a,c,d)) return true;
+    if(onSegment(b,c,d)) return true;
+
+    return false;
+}
+```
+
+### 面积
+
+* 三角形面积
+
+```cpp
+double triangleArea(Point a,Point b,Point c)
+{
+    return fabs(cross(b-a,c-a))/2.0;
+}
+```
+
+两倍有向面积：
+
+```cpp
+double triangleArea2(Point a,Point b,Point c)
+{
+    return cross(b-a,c-a);
+}
+```
+
+* 多边形面积
+
+```cpp
+double polygonArea(vector<Point>& p)
+{
+    int n=p.size();
+    double ans=0;
+
+    for(int i=0;i<n;i++)
+    {
+        ans+=cross(p[i],p[(i+1)%n]);
+    }
+
+    return fabs(ans)/2.0;
+}
+```
+
+* 多边形有向面积
+
+正数表示逆时针，负数表示顺时针。
+
+```cpp
+double signedPolygonArea(vector<Point>& p)
+{
+    int n=p.size();
+    double ans=0;
+
+    for(int i=0;i<n;i++)
+    {
+        ans+=cross(p[i],p[(i+1)%n]);
+    }
+
+    return ans/2.0;
+}
+```
+
+### 点和多边形
+
+* 判断点是否在多边形内
+
+返回值：
+
+`0`：外部
+
+`1`：边界
+
+`2`：内部
+
+```cpp
+int pointInPolygon(Point p,vector<Point>& poly)
+{
+    int n=poly.size();
+    bool inside=false;
+
+    for(int i=0,j=n-1;i<n;j=i++)
+    {
+        Point a=poly[i];
+        Point b=poly[j];
+
+        if(onSegment(p,a,b))
+            return 1;
+
+        bool intersect=
+            ((a.y>p.y)!=(b.y>p.y))
+            &&
+            (p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x);
+
+        if(intersect)
+            inside=!inside;
+    }
+
+    return inside?2:0;
+}
+```
+
+### 凸包
+
+* Andrew 求凸包
+
+时间复杂度 `O(n log n)`。
+
+该版本会删掉凸包边上的共线中间点。
+
+```cpp
+vector<Point> convexHull(vector<Point> p)
+{
+    sort(p.begin(),p.end());
+    p.erase(unique(p.begin(),p.end()),p.end());
+
+    int n=p.size();
+    if(n<=1) return p;
+
+    vector<Point> hull(2*n);
+    int k=0;
+
+    // 下凸壳
+    for(int i=0;i<n;i++)
+    {
+        while(k>=2&&sgn(cross(
+            hull[k-1]-hull[k-2],
+            p[i]-hull[k-1]
+        ))<=0)
+        {
+            k--;
+        }
+
+        hull[k++]=p[i];
+    }
+
+    // 上凸壳
+    for(int i=n-2,t=k+1;i>=0;i--)
+    {
+        while(k>=t&&sgn(cross(
+            hull[k-1]-hull[k-2],
+            p[i]-hull[k-1]
+        ))<=0)
+        {
+            k--;
+        }
+
+        hull[k++]=p[i];
+    }
+
+    hull.resize(k-1);
+    return hull;
+}
+```
+
+如果需要保留凸包边上的共线点，将：
+
+```cpp
+cross(...)<=0
+```
+
+改为：
+
+```cpp
+cross(...)<0
+```
+
+* 凸包周长
+
+```cpp
+double convexHullPerimeter(vector<Point> hull)
+{
+    int n=hull.size();
+
+    if(n==1) return 0;
+    if(n==2) return 2*dis(hull[0],hull[1]);
+
+    double ans=0;
+
+    for(int i=0;i<n;i++)
+    {
+        ans+=dis(hull[i],hull[(i+1)%n]);
+    }
+
+    return ans;
+}
+```
+
+### 整数坐标计算几何
+
+如果题目坐标均为整数，叉积和点积尽量使用整数，避免浮点误差。
+
+```cpp
+struct Point
+{
+    long long x,y;
+
+    Point operator - (const Point& b) const
+    {
+        return {x-b.x,y-b.y};
+    }
+
+    bool operator < (const Point& b) const
+    {
+        if(x!=b.x) return x<b.x;
+        return y<b.y;
+    }
+
+    bool operator == (const Point& b) const
+    {
+        return x==b.x&&y==b.y;
+    }
+};
+
+long long dot(Point a,Point b)
+{
+    return a.x*b.x+a.y*b.y;
+}
+
+long long cross(Point a,Point b)
+{
+    return a.x*b.y-a.y*b.x;
+}
+
+long long cross(Point a,Point b,Point c)
+{
+    return cross(b-a,c-a);
+}
+```
+
+如果坐标较大，叉积可能爆 `long long`，可以使用 `__int128`：
+
+```cpp
+__int128 cross(Point a,Point b)
+{
+    return (__int128)a.x*b.y-(__int128)a.y*b.x;
+}
+```
+
+### 常用结论
+
+* `dot(a,b)>0`：两向量夹角为锐角。
+* `dot(a,b)<0`：两向量夹角为钝角。
+* `dot(a,b)=0`：两向量垂直。
+* `cross(A,B,C)>0`：`C` 在有向直线 `AB` 左侧。
+* `cross(A,B,C)<0`：`C` 在有向直线 `AB` 右侧。
+* `cross(A,B,C)=0`：三点共线。
+* 点在线段 `AB` 上：`cross(A,B,P)=0` 且 `dot(P-A,P-B)<=0`。
 
 ## 动态规划
 
@@ -1651,6 +2304,55 @@ void dp()
 	}
 	for(int i=1;i<=cnt;i++) ans+=f[n][i][k];	
 	printf("%lld",ans);
+}
+```
+
+* 记忆化dfs
+
+```cpp
+function<int(int)> dfs;
+dfs = [&](int u) -> int
+{
+    if(dp[u]) return dp[u];
+    if(u == (1 << n) - 1) return dp[u] = 1;
+    int ans = 0;
+    for(int i = 0; i < n; i++)
+    {
+        if(!(u >> i & 1) && (pre[i] & u) == pre[i])
+        {
+            ans += dfs(u | (1 << i));
+        }
+    }
+
+    return dp[u] = ans;
+};
+```
+
+### SOS dp
+
+* 子集和
+
+```cpp
+int state = 1 << m;
+for (int bit = 0; bit < m; bit++) {
+    for (int mask = 0; mask < state; mask++) {
+        if (mask & (1 << bit)) {
+            dp[mask] += dp[mask ^ (1 << bit)];
+        }
+    }
+}
+```
+
+* 超集和
+
+```cpp
+int state = 1 << m;
+for (int bit = 0; bit < m; bit++) {
+    for (int mask = 0; mask < state; mask++) {
+        if (!(mask & (1 << bit))) {
+            dp[mask] += dp[mask | (1 << bit)];
+        }
+    }
 }
 ```
 
@@ -2409,6 +3111,145 @@ void get_centroids() {
 }
 ```
 
+### 树上启发式合并
+
+* 经典 Sack
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const int N=1e5+10;
+int n,m;
+struct Edge
+{
+    int to,nxt;
+}edge[N*2];
+int head[N],tot;
+int sz[N],big[N],col[N],L[N],R[N],Node[N],totfn;
+int ans[N],cnt[N],totcol;
+// sz: 子树大小
+// big: 重儿子
+// col: 结点颜色
+// L[u]: 结点 u 的 DFS 序
+// R[u]: 结点 u 子树中结点的 DFS 序的最大值
+// Node[i]: DFS 序为 i 的结点
+// totdfn: 节点计数器，也是当前遍历过节点的 DFS 序最大值
+// ans: 存答案
+// cnt[i]: 颜色为 i 的结点个数
+void addedge(int u,int v)
+{
+    edge[++tot].to=v;
+    edge[tot].nxt=head[u];
+    head[u]=tot;
+}
+
+void dfs1(int u,int fa)
+{
+    sz[u]=1;
+    L[u]=++totfn;
+    Node[totfn]=u;
+    for(int i=head[u];i;i=edge[i].nxt)
+    {
+        int v=edge[i].to;
+        if(v==fa) continue;
+        dfs1(v,u);
+        sz[u]+=sz[v];
+        if(!big[u]||sz[v]>sz[big[u]]) big[u]=v;
+
+    }
+    R[u]=totfn;
+}
+void add(int u)
+{
+    if(cnt[col[u]]==0) totcol++;
+    cnt[col[u]]++;
+}
+void del(int u)
+{
+    cnt[col[u]]--;
+    if(cnt[col[u]]==0) totcol--;
+}
+void dfs2(int u,int fa,bool flag)
+{
+    for(int i=head[u];i;i=edge[i].nxt)
+    {
+        int v=edge[i].to;
+        if(v==fa||v==big[u]) continue;
+        dfs2(v,u,false);
+    }
+    if(big[u]) dfs2(big[u],u,true);
+    for(int i=head[u];i;i=edge[i].nxt)
+    {
+        int v=edge[i].to;
+        if(v==fa||v==big[u]) continue;
+        for(int j=L[v];j<=R[v];j++) add(Node[j]);
+    }
+    add(u);
+    ans[u]=totcol;
+    if(!flag)
+    {
+        for(int i=L[u];i<=R[u];i++) del(Node[i]);
+    }
+}
+
+int main()
+{
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    cin>>n;
+    for(int i=1;i<n;i++)
+    {
+        int u,v;
+        cin>>u>>v;
+        addedge(u,v);
+        addedge(v,u);
+    }
+    for(int i=1;i<=n;i++) cin>>col[i];
+    dfs1(1,0);
+    dfs2(1,0,false);
+    cin>>m;
+    for(int i=1;i<=m;i++) 
+    {
+        int q;
+        cin>>q;
+        cout<<ans[q]<<"\n";
+    }
+    
+    return 0;
+}
+```
+
+* 小并大
+
+```cpp
+map<int,int> mp[N];
+void dfs(int u,int fa)
+{
+    int big=0;
+    for(int i=head[u];i;i=edge[i].nxt)
+    {
+        int v=edge[i].to;
+        if(v==fa) continue;
+        dfs(v,u);
+        if(!big||mp[v].size()>mp[big].size())
+            big=v;
+    }
+    if(big) swap(mp[u],mp[big]);
+    for(int i=head[u];i;i=edge[i].nxt)
+    {
+        int v=edge[i].to;
+        if(v==fa||v==big) continue;
+        for(auto [x,c]:mp[v])
+        {
+            // merge
+            mp[u][x]+=c;
+        }
+    }
+    // 加入u自身
+}
+```
+
 ## 数据结构
 
 ### 树状数组
@@ -2750,8 +3591,6 @@ for(int i=2;i<=n;i++)
 }
 ```
 
-
-
 ## 杂项
 
 ### 分块
@@ -3010,5 +3849,68 @@ vector<string> split(const string &s, char c)
     return res;
 }
 vector<string>fms=split(s,'=');
+```
+
+### 对拍
+
+```cpp
+//data.cpp
+srand(time(0));
+int n = rand() % 10 + 1;
+```
+
+```cpp
+//linux
+#include<bits/stdc++.h>
+using namespace std;
+
+int main()
+{
+    for(int T=1;T<=10000;T++)
+    {
+
+        system("./data > input.txt");
+        system("./std < input.txt > ans.txt");
+        system("./my < input.txt > out.txt");
+
+        if(system("diff ans.txt out.txt"))
+        {
+            cout<<"WA test "<<T<<endl;
+            system("cat input.txt");
+            break;
+        }
+    }
+    cout<<"OK "<<endl;
+
+}
+```
+
+```cpp
+//windows
+#include<bits/stdc++.h>
+using namespace std;
+
+int main()
+{
+    for(int T=1; T<=10000; T++)
+    {
+
+        system("data.exe > input.txt");
+        system("std.exe < input.txt > ans.txt");
+        system("my.exe < input.txt > out.txt");
+        // fc比较两个文件
+        if(system("fc ans.txt out.txt > nul"))
+        {
+            cout << "WA test " << T << endl;
+            cout << "Input:" << endl;
+            system("type input.txt");
+            break;
+        }
+        
+    }
+    cout << "OK "<< endl;
+
+    return 0;
+}
 ```
 
